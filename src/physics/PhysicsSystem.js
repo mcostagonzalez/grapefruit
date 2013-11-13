@@ -204,34 +204,13 @@ inherit(PhysicsSystem, Object, {
             return;
 
         var body = this._createBody(spr),
-            shape = this._createShape(spr, body),
-            control;
-
-        //add control body and constraints
-        if(!body.isStatic()) {
-            var cbody = new cp.Body(Infinity, Infinity), //control body
-                cpivot = new cp.PivotJoint(cbody, body, cp.vzero, cp.vzero),
-                cgear = new cp.GearJoint(cbody, body, 0, 1);
-
-            cpivot.maxBias = 0; //disable join correction
-            cpivot.maxForce = 10000; //emulate linear friction
-
-            cgear.errorBias = 0; //attempt to fully correct the joint each step
-            cgear.maxBias = 1.2; //but limit the angular correction
-            cgear.maxForce = 50000; //emulate angular friction
-
-            control = {};
-            control.body = cbody;
-            control.pivot = cpivot;
-            control.gear = cgear;
-        }
+            shape = this._createShape(spr, body);
 
         spr._phys.active = true;
         this.actionQueue.push(['add', {
             spr: spr,
             body: body,
-            shape: shape,
-            control: control
+            shape: shape
         }, cb]);
         this.act();
 
@@ -354,12 +333,7 @@ inherit(PhysicsSystem, Object, {
         if(!spr)
             return;
 
-        //update control body velocity (and pivot contraint makes regular follow)
-        if(spr._phys.control) {
-            spr._phys.control.body.setVel(vel);
-        }
-        //if no control body then update real body
-        else {
+        if(spr._phys.body) {
             spr._phys.body.setVel(vel);
         }
 
@@ -383,11 +357,6 @@ inherit(PhysicsSystem, Object, {
             spr._phys.body.setPos(pos);
         }
 
-        //update control body position
-        if(spr._phys.control) {
-            spr._phys.control.body.setPos(pos);
-        }
-
         return this;
     },
     /**
@@ -403,12 +372,7 @@ inherit(PhysicsSystem, Object, {
         if(!spr)
             return;
 
-        //update control body rotation (and gear contraint makes regular follow)
-        if(spr._phys.control) {
-            spr._phys.control.body.setAngle(rads);
-        }
-        //if no control body then update real body
-        else if(spr._phys.body) {
+        if(spr._phys.body) {
             spr._phys.body.setAngle(rads);
         }
 
@@ -550,15 +514,8 @@ inherit(PhysicsSystem, Object, {
 
                     this.space.addShape(data.shape);
 
-                    if(data.control) {
-                        data.control.body.setPos(data.spr.position);
-                        this.space.addConstraint(data.control.pivot);
-                        this.space.addConstraint(data.control.gear);
-                    }
-
                     data.spr._phys.body = data.body;
                     data.spr._phys.shape = data.shape;
-                    data.spr._phys.control = data.control;
                     break;
 
                 case 'remove':
