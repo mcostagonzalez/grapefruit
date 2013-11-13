@@ -23,6 +23,7 @@ var PhysicsSystem = function(state, options) {
     //default options
     options = options || {};
     options.gravity = options.gravity instanceof Vector ? options.gravity : new Vector(0, 9.87);
+    options.iterations = options.iterations || 10;
     options.sleepTimeThreshold = options.sleepTimeThreshold !== undefined ? options.sleepTimeThreshold : 0.2;
     options.collisionSlop = options.collisionSlop !== undefined ? options.collisionSlop : 0.1;
 
@@ -614,20 +615,14 @@ inherit(PhysicsSystem, Object, {
      * @private
      */
     _createBody: function(spr) {
-        var body = new cp.Body(
-            spr.mass || 1,
-            spr.inertia || cp.momentForBox(spr.mass || 1, spr.width, spr.height) || Infinity
-        );
+        var mass = spr.mass || 1,
+            inertia = spr.inertia || cp.momentForBox(mass, spr.width, spr.height) || Infinity;
 
-        if(spr.mass === Infinity) {
-            //inifinite mass means it is static, so make it static
-            //and do not add it to the world (no need to simulate it)
-            body.nodeIdleTime = Infinity;
-        }// else {
-            //this.space.addBody(body);
-        //}
+        if(mass === Infinity && inertia === Infinity) {
+            return this.space.staticBody;
+        }
 
-        return body;
+        return new cp.Body(mass, inertia);
     },
     /**
      * Creates a collision shape for a sprite
@@ -701,7 +696,7 @@ inherit(PhysicsSystem, Object, {
         shape.width = spr.width;
         shape.height = spr.height;
         shape.sprite = spr;
-        shape.setElasticity(0);
+        shape.setElasticity(spr.bounce || 0);
         shape.setSensor(spr.sensor);
         shape.setCollisionType(this.getCollisionType(spr));
         shape.setFriction(spr.friction || 0);
