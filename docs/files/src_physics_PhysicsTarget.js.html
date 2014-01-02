@@ -15,11 +15,11 @@
     <div id="hd" class="yui3-g header">
         <div class="yui3-u-3-4">
             
-                <h1><img src="https://en.gravatar.com/userimage/49218683/8654d0c767f327312ebb1ace7f5a8d8d.png" title="GrapeFruit Game Engine"></h1>
+                <h1><img src="http://www.gravatar.com/avatar/e60ee7bcb380d1ab175251890046b3d8.png" title="GrapeFruit Game Engine"></h1>
             
         </div>
         <div class="yui3-u-1-4 version">
-            <em>API Docs for: v0.1.0</em>
+            <em>API Docs for: v0.1.1</em>
         </div>
     </div>
     <div id="bd" class="yui3-g">
@@ -41,9 +41,13 @@
         <div id="api-tabview-panel">
             <ul id="api-classes" class="apis classes">
             
+                <li><a href="../classes/ATLAS_FORMAT.html">ATLAS_FORMAT</a></li>
+            
                 <li><a href="../classes/AudioManager.html">AudioManager</a></li>
             
                 <li><a href="../classes/AudioPlayer.html">AudioPlayer</a></li>
+            
+                <li><a href="../classes/AXIS.html">AXIS</a></li>
             
                 <li><a href="../classes/BaseTexture.html">BaseTexture</a></li>
             
@@ -53,15 +57,33 @@
             
                 <li><a href="../classes/Camera.html">Camera</a></li>
             
+                <li><a href="../classes/CAMERA_FOLLOW.html">CAMERA_FOLLOW</a></li>
+            
                 <li><a href="../classes/Circle.html">Circle</a></li>
             
                 <li><a href="../classes/Clock.html">Clock</a></li>
             
                 <li><a href="../classes/Container.html">Container</a></li>
             
+                <li><a href="../classes/DIRECTION.html">DIRECTION</a></li>
+            
                 <li><a href="../classes/Ellipse.html">Ellipse</a></li>
             
                 <li><a href="../classes/EventEmitter.html">EventEmitter</a></li>
+            
+                <li><a href="../classes/FILE_FORMAT.html">FILE_FORMAT</a></li>
+            
+                <li><a href="../classes/fx.camera.Close.html">fx.camera.Close</a></li>
+            
+                <li><a href="../classes/fx.camera.Effect.html">fx.camera.Effect</a></li>
+            
+                <li><a href="../classes/fx.camera.Fade.html">fx.camera.Fade</a></li>
+            
+                <li><a href="../classes/fx.camera.Flash.html">fx.camera.Flash</a></li>
+            
+                <li><a href="../classes/fx.camera.Scanlines.html">fx.camera.Scanlines</a></li>
+            
+                <li><a href="../classes/fx.camera.Shake.html">fx.camera.Shake</a></li>
             
                 <li><a href="../classes/Game.html">Game</a></li>
             
@@ -99,6 +121,8 @@
             
                 <li><a href="../classes/PhysicsTarget.html">PhysicsTarget</a></li>
             
+                <li><a href="../classes/pkg.html">pkg</a></li>
+            
                 <li><a href="../classes/plugin.html">plugin</a></li>
             
                 <li><a href="../classes/Pointer.html">Pointer</a></li>
@@ -108,6 +132,8 @@
                 <li><a href="../classes/Polygon.html">Polygon</a></li>
             
                 <li><a href="../classes/Rectangle.html">Rectangle</a></li>
+            
+                <li><a href="../classes/RENDERER.html">RENDERER</a></li>
             
                 <li><a href="../classes/RenderTexture.html">RenderTexture</a></li>
             
@@ -184,6 +210,8 @@
 
 <div class="file">
     <pre class="code prettyprint linenums">
+var Vector = require(&#x27;../math/Vector&#x27;);
+
 /**
  * Physics mixin. This will add physics capabilities to the class it mixes into.
  *
@@ -224,10 +252,22 @@ module.exports = function() {
     this.inertia = 0;
 
     /**
+     * The internal velocity value, used as a reusable vector for the setVelocity function. Setting
+     * this directly *has no effect*.
+     *
+     * @property _velocity
+     * @type Vector
+     * @private
+     * @readOnly
+     */
+    this._velocity = new Vector();
+
+    /**
      * Enables physics for this sprite
      *
      * @method enablePhysics
      * @param system {PhysicsSystem} The system for the sprite to be in
+     * @param callback {Function} The callback function to call after physics have been enabled
      * @return {mixed} Returns itself.
      * @chainable
      * @async
@@ -270,6 +310,7 @@ module.exports = function() {
      * Disbales physics for this sprite
      *
      * @method disablePhysics
+     * @param callback {Function} The callback function to call after physics have been disabled
      * @return {mixed} Returns itself.
      * @chainable
      * @async
@@ -288,6 +329,7 @@ module.exports = function() {
      * (like to a new world)
      *
      * @method disablePhysics
+     * @param callback {Function} The callback function to call after the sprite has been reindexed
      * @return {mixed} Returns itself.
      * @chainable
      * @async
@@ -321,13 +363,19 @@ module.exports = function() {
      * Sets the velocity of this sprite
      *
      * @method setVelocity
-     * @param velocity {Vector} The new velocity of the object
+     * @param x {Number|Vector} The x coord to set the velocity to, if a Vector is passed the y param is ignored
+     * @param y {Number} The y coord to set the velocity to
      * @return {mixed} Returns itself.
      * @chainable
      */
-    this.setVelocity = function(vel) {
+    this.setVelocity = function(x, y) {
+        y = x.y !== undefined ? x.y : (y || 0);
+        x = x.x !== undefined ? x.x : (x || 0);
+
+        this._velocity.set(x, y);
+
         if(this._phys.system) {
-            this._phys.system.setVelocity(this, vel);
+            this._phys.system.setVelocity(this, this._velocity);
         }
 
         return this;
@@ -355,14 +403,16 @@ module.exports = function() {
      * Sets the position of this sprite
      *
      * @method setPosition
-     * @param x {Number}
-     * @param y {Number}
+     * @param x {Number|Vector} The x coord to set position to, if a Vector is passed the y param is ignored
+     * @param y {Number} The y coord to set position to
      * @return {mixed} Returns itself.
      * @chainable
      */
     this.setPosition = function(x, y) {
-        this.position.x = x;
-        this.position.y = y;
+        y = x.y !== undefined ? x.y : (y || 0);
+        x = x.x !== undefined ? x.x : (x || 0);
+
+        this.position.set(x, y);
 
         if(this._phys.system) {
             this._phys.system.setPosition(this, this.position);

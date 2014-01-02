@@ -5,7 +5,7 @@ node_js:
 branches:
     only:
         - master
-        - /^release-.*$/
+        - dev
 
 install:
     - npm install -g grunt-cli
@@ -13,5 +13,4 @@ install:
 
 script:
     - grunt urequire:dev
-    - grunt replace:dist
     - grunt testci
